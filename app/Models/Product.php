@@ -9,24 +9,65 @@ class Product extends Model
 {
     use HasFactory;
 
-    // Fields that can be mass-assigned
-    protected $fillable = [
-        'name', 'price', 'status', 'activated_at'
-    ];
+    protected $fillable = ['name', 'price', 'status', 'activated_at', 'deactivated_at', 'archived_at'];
 
-    // Register a custom observable event named "activated"
-    protected $observables = ['activated'];
+    // Register all custom observable events
+    protected $observables = ['activated', 'deactivated', 'archived', 'priceChanged'];
 
-    /**
-     * Custom method to activate a product.
-     * When called, it updates status & then fires custom event.
-     */
+    // Relationship to status logs
+    public function statusLogs()
+    {
+        return $this->hasMany(ProductStatusLog::class);
+    }
+
+    // Temporary property to pass old price to observer (not saved to DB)
+    public $oldPrice = null;
+
+    // Status: 0=inactive, 1=deactivated, 2=active, 3=archived
     public function makeActive()
-    { 
-        // Set product status to active
+    {
         $this->update(['status' => 2]);
-
-        // Fire the custom event
         $this->fireModelEvent('activated', false);
+    }
+
+    public function makeDeactive()
+    {
+        $this->update(['status' => 1]);
+        $this->fireModelEvent('deactivated', false);
+    }
+
+    public function makeArchived()
+    {
+        $this->update(['status' => 3]);
+        $this->fireModelEvent('archived', false);
+    }
+
+    public function changePrice(int $newPrice)
+    {
+        $this->oldPrice = $this->price;
+        $this->update(['price' => $newPrice]);
+        $this->fireModelEvent('priceChanged', false);
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match($this->status) {
+            0 => 'Inactive',
+            1 => 'Deactivated',
+            2 => 'Active',
+            3 => 'Archived',
+            default => 'Unknown',
+        };
+    }
+
+    public function getStatusBadgeAttribute(): string
+    {
+        return match($this->status) {
+            0 => 'secondary',
+            1 => 'warning',
+            2 => 'success',
+            3 => 'danger',
+            default => 'secondary',
+        };
     }
 }
