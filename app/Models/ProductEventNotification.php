@@ -19,17 +19,11 @@ class ProductEventNotification extends Model
         'is_read' => 'boolean',
     ];
 
-    /**
-     * Product relationship.
-     */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Event badge class.
-     */
     public function getEventBadgeAttribute(): string
     {
         return match ($this->event) {
@@ -42,9 +36,6 @@ class ProductEventNotification extends Model
         };
     }
 
-    /**
-     * Event icon.
-     */
     public function getEventIconAttribute(): string
     {
         return match ($this->event) {

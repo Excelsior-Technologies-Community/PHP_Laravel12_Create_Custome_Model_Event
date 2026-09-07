@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductStatusLog extends Model
 {
@@ -13,10 +14,7 @@ class ProductStatusLog extends Model
         'new_value',
     ];
 
-    /**
-     * Product relationship.
-     */
-    public function product()
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }

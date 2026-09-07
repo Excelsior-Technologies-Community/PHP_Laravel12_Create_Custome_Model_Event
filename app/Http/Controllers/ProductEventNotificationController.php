@@ -3,144 +3,292 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductEventNotification;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class ProductEventNotificationController extends Controller
 {
-    /**
-     * Display notification center.
-     */
-    public function index(Request $request): View
+    /*
+    |--------------------------------------------------------------------------
+    | Notification List
+    |--------------------------------------------------------------------------
+    */
+
+    public function index(Request $request)
     {
+        $search = $request->get('search');
+
         $event = $request->get('event');
 
+        $isRead = $request->get('is_read');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notifications Query
+        |--------------------------------------------------------------------------
+        */
+
         $notifications = ProductEventNotification::with('product')
-            ->when($event, function ($query) use ($event) {
-                $query->where('event', $event);
+
+            ->when($search, function ($query) use ($search) {
+
+                $query->where(function ($q) use ($search) {
+
+                    $q->where(
+                        'title',
+                        'like',
+                        "%{$search}%"
+                    )
+
+                    ->orWhere(
+                        'message',
+                        'like',
+                        "%{$search}%"
+                    )
+
+                    ->orWhere(
+                        'event',
+                        'like',
+                        "%{$search}%"
+                    );
+
+                });
+
             })
+
+
+            ->when($event, function ($query) use ($event) {
+
+                $query->where(
+                    'event',
+                    $event
+                );
+
+            })
+
+
+            ->when(
+                $isRead !== null &&
+                $isRead !== '',
+                function ($query) use ($isRead) {
+
+                    $query->where(
+                        'is_read',
+                        (int) $isRead
+                    );
+
+                }
+            )
+
+
             ->latest()
+
             ->paginate(15)
+
             ->withQueryString();
 
-        $unreadCount = ProductEventNotification::where('is_read', false)->count();
 
-        $eventCounts = ProductEventNotification::query()
-            ->selectRaw('event, COUNT(*) as total')
-            ->groupBy('event')
-            ->pluck('total', 'event');
+        /*
+        |--------------------------------------------------------------------------
+        | Unread Count
+        |--------------------------------------------------------------------------
+        */
 
-        return view('products.notifications', compact(
-            'notifications',
-            'unreadCount',
-            'eventCounts',
-            'event'
-        ));
+        $unreadCount = ProductEventNotification::where(
+            'is_read',
+            false
+        )->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Event Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $eventCounts = ProductEventNotification::select(
+            'event',
+            DB::raw('COUNT(*) as total')
+        )
+
+        ->groupBy('event')
+
+        ->orderByDesc('total')
+
+        ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Event Dropdown
+        |--------------------------------------------------------------------------
+        */
+
+        $events = ProductEventNotification::select('event')
+
+            ->distinct()
+
+            ->orderBy('event')
+
+            ->pluck('event');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return View
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'products.notifications',
+            compact(
+                'notifications',
+                'unreadCount',
+                'eventCounts',
+                'events',
+                'search',
+                'event',
+                'isRead'
+            )
+        );
     }
 
-    /**
-     * Return latest notifications for AJAX polling.
-     */
-    public function latest(Request $request): JsonResponse
+
+    /*
+    |--------------------------------------------------------------------------
+    | Latest Notifications
+    |--------------------------------------------------------------------------
+    */
+
+    public function latest()
     {
-        $limit = min((int) $request->get('limit', 10), 50);
-
         $notifications = ProductEventNotification::with('product')
-            ->latest()
-            ->limit($limit)
-            ->get()
-            ->map(function (ProductEventNotification $notification) {
-                return [
-                    'id' => $notification->id,
-                    'product_id' => $notification->product_id,
-                    'product_name' => $notification->product?->name ?? 'Deleted Product',
-                    'event' => $notification->event,
-                    'title' => $notification->title,
-                    'message' => $notification->message,
-                    'is_read' => $notification->is_read,
-                    'badge' => $notification->event_badge,
-                    'icon' => $notification->event_icon,
-                    'created_at' => $notification->created_at?->diffForHumans(),
-                ];
-            });
 
-        $unreadCount = ProductEventNotification::where('is_read', false)->count();
+            ->latest()
+
+            ->take(10)
+
+            ->get();
+
+
+        $unreadCount = ProductEventNotification::where(
+            'is_read',
+            false
+        )->count();
+
 
         return response()->json([
-            'success' => true,
-            'unread_count' => $unreadCount,
+
             'notifications' => $notifications,
+
+            'unread_count' => $unreadCount,
+
         ]);
     }
 
-    /**
-     * Mark one notification as read.
-     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark Notification As Read
+    |--------------------------------------------------------------------------
+    */
+
     public function markAsRead(
         ProductEventNotification $notification
-    ): JsonResponse {
+    ) {
+
         $notification->update([
+
             'is_read' => true,
+
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification marked as read.',
-            'unread_count' => ProductEventNotification::where(
-                'is_read',
-                false
-            )->count(),
-        ]);
+
+        return redirect()
+
+            ->route('notifications.index')
+
+            ->with(
+                'success',
+                'Notification marked as read.'
+            );
     }
 
-    /**
-     * Mark all notifications as read.
-     */
-    public function markAllAsRead(): JsonResponse
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark All Notifications As Read
+    |--------------------------------------------------------------------------
+    */
+
+    public function markAllAsRead()
     {
-        ProductEventNotification::where('is_read', false)
-            ->update([
-                'is_read' => true,
-            ]);
+        ProductEventNotification::where(
+            'is_read',
+            false
+        )
 
-        return response()->json([
-            'success' => true,
-            'message' => 'All notifications marked as read.',
-            'unread_count' => 0,
+        ->update([
+
+            'is_read' => true,
+
         ]);
+
+
+        return redirect()
+
+            ->route('notifications.index')
+
+            ->with(
+                'success',
+                'All notifications marked as read.'
+            );
     }
 
-    /**
-     * Delete one notification.
-     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Notification
+    |--------------------------------------------------------------------------
+    */
+
     public function destroy(
         ProductEventNotification $notification
-    ): JsonResponse {
+    ) {
+
         $notification->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification deleted.',
-            'unread_count' => ProductEventNotification::where(
-                'is_read',
-                false
-            )->count(),
-        ]);
+
+        return redirect()
+
+            ->route('notifications.index')
+
+            ->with(
+                'success',
+                'Notification deleted successfully.'
+            );
     }
 
-    /**
-     * Clear all notifications.
-     */
-    public function clearAll(): JsonResponse
+
+    /*
+    |--------------------------------------------------------------------------
+    | Clear All Notifications
+    |--------------------------------------------------------------------------
+    */
+
+    public function clear()
     {
         ProductEventNotification::query()->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'All notifications cleared.',
-            'unread_count' => 0,
-        ]);
+
+        return redirect()
+
+            ->route('notifications.index')
+
+            ->with(
+                'success',
+                'All notifications cleared successfully.'
+            );
     }
 }

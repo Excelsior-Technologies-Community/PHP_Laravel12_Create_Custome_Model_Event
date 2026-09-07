@@ -19,9 +19,6 @@ class Product extends Model
         'archived_at',
     ];
 
-    /**
-     * Custom observable model events.
-     */
     protected $observables = [
         'activated',
         'deactivated',
@@ -30,31 +27,28 @@ class Product extends Model
         'statusChanged',
     ];
 
-    /**
-     * Temporary properties used by observers.
-     * These are not stored in the database.
-     */
     public $oldPrice = null;
+
     public $oldStatus = null;
 
-    /**
-     * Product status constants.
-     */
     public const STATUS_INACTIVE = 0;
+
     public const STATUS_DEACTIVATED = 1;
+
     public const STATUS_ACTIVE = 2;
+
     public const STATUS_ARCHIVED = 3;
 
     /**
-     * Relationship with status logs.
+     * Status logs relationship.
      */
-    public function statusLogs()
+    public function statusLogs(): HasMany
     {
         return $this->hasMany(ProductStatusLog::class);
     }
 
     /**
-     * Product event notifications.
+     * Notifications relationship.
      */
     public function eventNotifications(): HasMany
     {
@@ -64,39 +58,45 @@ class Product extends Model
     /**
      * Activate product.
      */
-    public function makeActive()
+    public function makeActive(): void
     {
-        $this->changeStatus(self::STATUS_ACTIVE, 'activated');
+        $this->changeStatus(
+            self::STATUS_ACTIVE,
+            'activated'
+        );
     }
 
     /**
      * Deactivate product.
      */
-    public function makeDeactive()
+    public function makeDeactive(): void
     {
-        $this->changeStatus(self::STATUS_DEACTIVATED, 'deactivated');
+        $this->changeStatus(
+            self::STATUS_DEACTIVATED,
+            'deactivated'
+        );
     }
 
     /**
      * Archive product.
      */
-    public function makeArchived()
+    public function makeArchived(): void
     {
-        $this->changeStatus(self::STATUS_ARCHIVED, 'archived');
+        $this->changeStatus(
+            self::STATUS_ARCHIVED,
+            'archived'
+        );
     }
 
     /**
-     * Generic status changing method.
-     *
-     * This method fires:
-     * 1. statusChanged
-     * 2. Specific event such as activated/deactivated/archived
+     * Change status.
      */
-    protected function changeStatus(int $newStatus, string $specificEvent): void
-    {
+    protected function changeStatus(
+        int $newStatus,
+        string $specificEvent
+    ): void {
         $this->oldStatus = $this->status;
 
-        // Do nothing if status is already the requested status.
         if ((int) $this->status === $newStatus) {
             return;
         }
@@ -105,21 +105,21 @@ class Product extends Model
             'status' => $newStatus,
         ]);
 
-        /**
-         * Generic custom event.
-         */
-        $this->fireModelEvent('statusChanged', false);
+        $this->fireModelEvent(
+            'statusChanged',
+            false
+        );
 
-        /**
-         * Existing specific custom event.
-         */
-        $this->fireModelEvent($specificEvent, false);
+        $this->fireModelEvent(
+            $specificEvent,
+            false
+        );
     }
 
     /**
-     * Change product price.
+     * Change price.
      */
-    public function changePrice(int $newPrice)
+    public function changePrice(int $newPrice): void
     {
         $this->oldPrice = $this->price;
 
@@ -127,11 +127,14 @@ class Product extends Model
             'price' => $newPrice,
         ]);
 
-        $this->fireModelEvent('priceChanged', false);
+        $this->fireModelEvent(
+            'priceChanged',
+            false
+        );
     }
 
     /**
-     * Status label accessor.
+     * Status label.
      */
     public function getStatusLabelAttribute(): string
     {
@@ -145,7 +148,7 @@ class Product extends Model
     }
 
     /**
-     * Bootstrap badge color accessor.
+     * Status badge.
      */
     public function getStatusBadgeAttribute(): string
     {
@@ -159,7 +162,7 @@ class Product extends Model
     }
 
     /**
-     * Convert status number into readable text.
+     * Status name.
      */
     public static function statusName($status): string
     {

@@ -2,378 +2,472 @@
 
 @section('content')
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="container-fluid py-4">
 
+```
+{{-- Header --}}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h3 class="mb-1">Products</h3>
+        <small class="text-muted">
+            Custom Model Events & Observer Management
+        </small>
+    </div>
 
-<div>
-    <h4 class="mb-1">Products</h4>
+    <div class="d-flex gap-2">
+        <a href="{{ route('products.dashboard') }}"
+           class="btn btn-info text-white">
+            📊 Dashboard
+        </a>
 
-    <small class="text-muted">
-        Custom Model Events & Observer Management
-    </small>
+        <a href="{{ route('products.export', request()->query()) }}"
+           class="btn btn-success">
+            📥 Export CSV
+        </a>
+
+        <a href="{{ route('products.create') }}"
+           class="btn btn-primary">
+            + Add Product
+        </a>
+    </div>
 </div>
 
-<div class="d-flex gap-2">
 
-    <a
-        href="{{ route('products.dashboard') }}"
-        class="btn btn-info text-white"
-    >
-        📊 Dashboard
-    </a>
-
-    <a
-        href="{{ route('products.create') }}"
-        class="btn btn-primary"
-    >
-        + Add Product
-    </a>
-
-</div>
-
-</div>
-
-{{-- ============================================================
-BULK ACTION FORM
-============================================================ --}}
-
-<form
-    action="{{ route('products.bulk-action') }}"
-    method="POST"
-    id="bulkActionForm"
->
-    @csrf
-
-
-<div class="card shadow-sm mb-3">
-
+{{-- Search / Filter / Sort --}}
+<div class="card shadow-sm mb-4">
     <div class="card-body">
 
-        <div class="row align-items-center g-2">
+        <form method="GET"
+              action="{{ route('products.index') }}"
+              class="row g-3">
 
+            {{-- Search --}}
             <div class="col-md-4">
+                <label class="form-label fw-semibold">
+                    Search
+                </label>
 
-                <div class="form-check">
-
-                    <input
-                        class="form-check-input"
-                        type="checkbox"
-                        id="selectAll"
-                    >
-
-                    <label
-                        class="form-check-label fw-semibold"
-                        for="selectAll"
-                    >
-                        Select All Products
-                    </label>
-
-                </div>
-
+                <input type="text"
+                       name="search"
+                       value="{{ $search }}"
+                       class="form-control"
+                       placeholder="Search name, ID or price...">
             </div>
 
-            <div class="col-md-5">
 
-                <select
-                    name="action"
-                    id="bulkAction"
-                    class="form-select"
-                >
+            {{-- Status --}}
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">
+                    Status
+                </label>
+
+                <select name="status"
+                        class="form-select">
 
                     <option value="">
-                        Select Bulk Action
+                        All Status
                     </option>
 
-                    <option value="activate">
-                        ✅ Activate Selected
+                    <option value="0"
+                        {{ $status == '0' ? 'selected' : '' }}>
+                        Inactive
                     </option>
 
-                    <option value="deactivate">
-                        ⛔ Deactivate Selected
+                    <option value="1"
+                        {{ $status == '1' ? 'selected' : '' }}>
+                        Deactivated
                     </option>
 
-                    <option value="archive">
-                        📦 Archive Selected
+                    <option value="2"
+                        {{ $status == '2' ? 'selected' : '' }}>
+                        Active
+                    </option>
+
+                    <option value="3"
+                        {{ $status == '3' ? 'selected' : '' }}>
+                        Archived
                     </option>
 
                 </select>
-
             </div>
 
-            <div class="col-md-3">
 
-                <button
-                    type="submit"
-                    class="btn btn-dark w-100"
-                    id="bulkSubmit"
-                    disabled
-                >
-                    Apply to Selected
+            {{-- Sort --}}
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">
+                    Sort
+                </label>
+
+                <select name="sort"
+                        class="form-select">
+
+                    <option value="latest"
+                        {{ $sort == 'latest' ? 'selected' : '' }}>
+                        Latest
+                    </option>
+
+                    <option value="oldest"
+                        {{ $sort == 'oldest' ? 'selected' : '' }}>
+                        Oldest
+                    </option>
+
+                    <option value="name_asc"
+                        {{ $sort == 'name_asc' ? 'selected' : '' }}>
+                        Name A-Z
+                    </option>
+
+                    <option value="name_desc"
+                        {{ $sort == 'name_desc' ? 'selected' : '' }}>
+                        Name Z-A
+                    </option>
+
+                    <option value="price_asc"
+                        {{ $sort == 'price_asc' ? 'selected' : '' }}>
+                        Price Low-High
+                    </option>
+
+                    <option value="price_desc"
+                        {{ $sort == 'price_desc' ? 'selected' : '' }}>
+                        Price High-Low
+                    </option>
+
+                </select>
+            </div>
+
+
+            {{-- Filter Button --}}
+            <div class="col-md-2 d-flex align-items-end gap-2">
+
+                <button class="btn btn-primary w-100"
+                        type="submit">
+                    🔎 Filter
                 </button>
 
+                <a href="{{ route('products.index') }}"
+                   class="btn btn-outline-secondary">
+                    ✕
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+
+{{-- Bulk Action --}}
+<form action="{{ route('products.bulk-action') }}"
+      method="POST"
+      id="bulkActionForm">
+
+    @csrf
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+
+            <div class="row align-items-center g-2">
+
+                {{-- Select All --}}
+                <div class="col-md-4">
+
+                    <div class="form-check">
+
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="selectAll">
+
+                        <label class="form-check-label fw-semibold"
+                               for="selectAll">
+                            Select All Products
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                {{-- Bulk Action --}}
+                <div class="col-md-5">
+
+                    <select name="action"
+                            id="bulkAction"
+                            class="form-select">
+
+                        <option value="">
+                            Select Bulk Action
+                        </option>
+
+                        <option value="activate">
+                            ✅ Activate Selected
+                        </option>
+
+                        <option value="deactivate">
+                            ⛔ Deactivate Selected
+                        </option>
+
+                        <option value="archive">
+                            📦 Archive Selected
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                {{-- Apply --}}
+                <div class="col-md-3">
+
+                    <button type="submit"
+                            class="btn btn-dark w-100"
+                            id="bulkSubmit"
+                            disabled>
+                        Apply to Selected
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            {{-- Selected Count --}}
+            <div class="mt-2">
+
+                <small class="text-muted">
+                    Selected:
+                    <strong id="selectedCount">0</strong>
+                    product(s)
+                </small>
+
             </div>
 
         </div>
-
-        <div class="mt-2">
-
-            <small class="text-muted">
-
-                Selected:
-                <strong id="selectedCount">0</strong>
-                product(s)
-
-            </small>
-
-        </div>
-
     </div>
+
+</form>
+
+
+{{-- Products Table --}}
+<div class="table-responsive">
+
+    <table class="table table-bordered bg-white shadow-sm">
+
+        <thead class="table-dark">
+
+            <tr>
+                <th>#</th>
+                <th>Select</th>
+                <th>Name</th>
+                <th>Price (₹)</th>
+                <th>Status</th>
+                <th>Activated At</th>
+                <th>Actions</th>
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            @forelse($products as $product)
+
+                <tr>
+
+                    {{-- Sequential Number --}}
+                    <td>
+                        {{ $products->firstItem() + $loop->index }}
+                    </td>
+
+
+                    {{-- Checkbox --}}
+                    <td class="text-center">
+
+                        <input class="form-check-input product-checkbox"
+                               type="checkbox"
+                               value="{{ $product->id }}">
+
+                    </td>
+
+
+                    {{-- Name --}}
+                    <td>
+                        <strong>
+                            {{ $product->name }}
+                        </strong>
+                    </td>
+
+
+                    {{-- Price --}}
+                    <td>
+                        ₹{{ number_format($product->price) }}
+                    </td>
+
+
+                    {{-- Status --}}
+                    <td>
+
+                        <span class="badge bg-{{ $product->status_badge }}">
+                            {{ $product->status_label }}
+                        </span>
+
+                    </td>
+
+
+                    {{-- Activated At --}}
+                    <td>
+                        {{ $product->activated_at ?? '—' }}
+                    </td>
+
+
+                    {{-- Actions --}}
+                    <td>
+
+                        <div class="d-flex gap-1 flex-wrap">
+
+                            {{-- Edit --}}
+                            <a href="{{ route('products.edit', $product) }}"
+                               class="btn btn-sm btn-warning">
+                                Edit
+                            </a>
+
+
+                            {{-- Activate --}}
+                            @if($product->status != 2)
+
+                                <form action="{{ route('products.activate', $product) }}"
+                                      method="POST">
+
+                                    @csrf
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-success">
+                                        Activate
+                                    </button>
+
+                                </form>
+
+                            @endif
+
+
+                            {{-- Deactivate --}}
+                            @if($product->status == 2)
+
+                                <form action="{{ route('products.deactivate', $product) }}"
+                                      method="POST">
+
+                                    @csrf
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-secondary">
+                                        Deactivate
+                                    </button>
+
+                                </form>
+
+                            @endif
+
+
+                            {{-- Archive --}}
+                            @if($product->status != 3)
+
+                                <form action="{{ route('products.archive', $product) }}"
+                                      method="POST">
+
+                                    @csrf
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger">
+                                        Archive
+                                    </button>
+
+                                </form>
+
+                            @endif
+
+
+                            {{-- Logs --}}
+                            <a href="{{ route('products.logs', $product) }}"
+                               class="btn btn-sm btn-info text-white">
+                                Logs
+                            </a>
+
+
+                            {{-- Delete --}}
+                            <form action="{{ route('products.destroy', $product) }}"
+                                  method="POST"
+                                  onsubmit="return confirm('Delete this product?')">
+
+                                @csrf
+                                @method('DELETE')
+
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-danger">
+                                    Delete
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            @empty
+
+                <tr>
+
+                    <td colspan="7"
+                        class="text-center text-muted py-5">
+
+                        No products found.
+
+                    </td>
+
+                </tr>
+
+            @endforelse
+
+        </tbody>
+
+    </table>
 
 </div>
 
 
-</form>
+{{-- Numeric Only Pagination --}}
+@if($products->hasPages())
 
-{{-- ============================================================
-PRODUCTS TABLE
-IMPORTANT: The table is OUTSIDE the bulk form.
-This prevents nested forms.
-============================================================ --}}
+    <div class="d-flex justify-content-center mt-4">
 
-<div class="table-responsive">
+        <nav aria-label="Product pagination">
 
+            <ul class="pagination">
 
-<table class="table table-bordered bg-white shadow-sm">
+                @for($page = 1; $page <= $products->lastPage(); $page++)
 
-    <thead class="table-dark">
+                    <li class="page-item
+                        {{ $products->currentPage() == $page ? 'active' : '' }}">
 
-        <tr>
+                        <a class="page-link"
+                           href="{{ request()->fullUrlWithQuery(['page' => $page]) }}">
 
-            <th style="width:50px">
-                #
-            </th>
+                            {{ $page }}
 
-            <th style="width:60px">
-                Select
-            </th>
+                        </a>
 
-            <th>
-                Name
-            </th>
+                    </li>
 
-            <th>
-                Price (₹)
-            </th>
+                @endfor
 
-            <th>
-                Status
-            </th>
+            </ul>
 
-            <th>
-                Activated At
-            </th>
+        </nav>
 
-            <th>
-                Actions
-            </th>
+    </div>
 
-        </tr>
-
-    </thead>
-
-    <tbody>
-
-        @forelse($products as $product)
-
-        <tr>
-
-            <td>
-                {{ $product->id }}
-            </td>
-
-            {{-- Checkbox is NOT inside the bulk form anymore.
-                 JavaScript will add selected IDs to the form
-                 before submission. --}}
-            <td class="text-center">
-
-                <input
-                    class="form-check-input product-checkbox"
-                    type="checkbox"
-                    value="{{ $product->id }}"
-                >
-
-            </td>
-
-            <td>
-
-                <strong>
-                    {{ $product->name }}
-                </strong>
-
-            </td>
-
-            <td>
-
-                ₹{{ number_format($product->price) }}
-
-            </td>
-
-            <td>
-
-                <span
-                    class="badge bg-{{ $product->status_badge }}"
-                >
-                    {{ $product->status_label }}
-                </span>
-
-            </td>
-
-            <td>
-
-                {{ $product->activated_at ?? '—' }}
-
-            </td>
-
-            <td>
-
-                <div class="d-flex gap-1 flex-wrap">
-
-                    {{-- Edit --}}
-
-                    <a
-                        href="{{ route('products.edit', $product) }}"
-                        class="btn btn-sm btn-warning"
-                    >
-                        Edit
-                    </a>
-
-
-                    {{-- Activate --}}
-
-                    @if($product->status != 2)
-
-                    <form
-                        action="{{ route('products.activate', $product) }}"
-                        method="POST"
-                    >
-
-                        @csrf
-                        @method('PATCH')
-
-                        <button
-                            type="submit"
-                            class="btn btn-sm btn-success"
-                        >
-                            Activate
-                        </button>
-
-                    </form>
-
-                    @endif
-
-
-                    {{-- Deactivate --}}
-
-                    @if($product->status == 2)
-
-                    <form
-                        action="{{ route('products.deactivate', $product) }}"
-                        method="POST"
-                    >
-
-                        @csrf
-                        @method('PATCH')
-
-                        <button
-                            type="submit"
-                            class="btn btn-sm btn-secondary"
-                        >
-                            Deactivate
-                        </button>
-
-                    </form>
-
-                    @endif
-
-
-                    {{-- Archive --}}
-
-                    @if($product->status != 3)
-
-                    <form
-                        action="{{ route('products.archive', $product) }}"
-                        method="POST"
-                    >
-
-                        @csrf
-                        @method('PATCH')
-
-                        <button
-                            type="submit"
-                            class="btn btn-sm btn-danger"
-                        >
-                            Archive
-                        </button>
-
-                    </form>
-
-                    @endif
-
-
-                    {{-- Logs --}}
-
-                    <a
-                        href="{{ route('products.logs', $product) }}"
-                        class="btn btn-sm btn-info text-white"
-                    >
-                        Logs
-                    </a>
-
-
-                    {{-- Delete --}}
-
-                    <form
-                        action="{{ route('products.destroy', $product) }}"
-                        method="POST"
-                        onsubmit="return confirm('Delete this product?')"
-                    >
-
-                        @csrf
-                        @method('DELETE')
-
-                        <button
-                            type="submit"
-                            class="btn btn-sm btn-outline-danger"
-                        >
-                            Delete
-                        </button>
-
-                    </form>
-
-                </div>
-
-            </td>
-
-        </tr>
-
-        @empty
-
-        <tr>
-
-            <td
-                colspan="7"
-                class="text-center text-muted py-4"
-            >
-                No products found.
-            </td>
-
-        </tr>
-
-        @endforelse
-
-    </tbody>
-
-</table>
+@endif
+```
 
 </div>
 
@@ -385,11 +479,9 @@ This prevents nested forms.
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    const bulkForm =
-        document.getElementById('bulkActionForm');
+    const bulkForm = document.getElementById('bulkActionForm');
 
-    const selectAll =
-        document.getElementById('selectAll');
+    const selectAll = document.getElementById('selectAll');
 
     const checkboxes =
         document.querySelectorAll('.product-checkbox');
@@ -404,12 +496,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('bulkAction');
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Update Selection
-    |--------------------------------------------------------------------------
-    */
-
     function updateSelection() {
 
         const checked =
@@ -417,7 +503,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 '.product-checkbox:checked'
             );
 
-        selectedCount.textContent = checked.length;
+        selectedCount.textContent =
+            checked.length;
 
         bulkSubmit.disabled =
             checked.length === 0 ||
@@ -426,12 +513,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Select All
-    |--------------------------------------------------------------------------
-    */
-
+    // Select All
     selectAll.addEventListener('change', function () {
 
         checkboxes.forEach(function (checkbox) {
@@ -446,12 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Individual Checkbox
-    |--------------------------------------------------------------------------
-    */
-
+    // Individual Checkbox
     checkboxes.forEach(function (checkbox) {
 
         checkbox.addEventListener('change', function () {
@@ -476,29 +553,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Bulk Action Dropdown
-    |--------------------------------------------------------------------------
-    */
-
-    bulkAction.addEventListener('change', function () {
-
-        updateSelection();
-
-    });
+    // Bulk Action Change
+    bulkAction.addEventListener(
+        'change',
+        updateSelection
+    );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Bulk Form Submit
-    |--------------------------------------------------------------------------
-    */
-
+    // Bulk Submit
     bulkForm.addEventListener('submit', function (event) {
 
         event.preventDefault();
-
 
         const checked =
             document.querySelectorAll(
@@ -513,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function () {
             );
 
             return;
-
         }
 
 
@@ -524,34 +588,25 @@ document.addEventListener('DOMContentLoaded', function () {
             );
 
             return;
-
         }
 
 
-        const actionText =
+        if (!confirm(
+            'Apply "' +
             bulkAction.options[
                 bulkAction.selectedIndex
-            ].text;
-
-
-        const confirmed = confirm(
-            `${actionText} for ${checked.length} selected product(s)?`
-        );
-
-
-        if (!confirmed) {
+            ].text +
+            '" to ' +
+            checked.length +
+            ' product(s)?'
+        )) {
 
             return;
 
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Remove previously generated hidden inputs
-        |--------------------------------------------------------------------------
-        */
-
+        // Remove old hidden inputs
         bulkForm
             .querySelectorAll(
                 'input[name="product_ids[]"]'
@@ -563,46 +618,27 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Add selected product IDs to bulk form
-        |--------------------------------------------------------------------------
-        */
-
+        // Add selected IDs
         checked.forEach(function (checkbox) {
 
-            const hiddenInput =
+            const input =
                 document.createElement('input');
 
-            hiddenInput.type = 'hidden';
+            input.type = 'hidden';
 
-            hiddenInput.name =
-                'product_ids[]';
+            input.name = 'product_ids[]';
 
-            hiddenInput.value =
-                checkbox.value;
+            input.value = checkbox.value;
 
-            bulkForm.appendChild(hiddenInput);
+            bulkForm.appendChild(input);
 
         });
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Submit the actual bulk form
-        |--------------------------------------------------------------------------
-        */
 
         bulkForm.submit();
 
     });
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Initial State
-    |--------------------------------------------------------------------------
-    */
 
     updateSelection();
 

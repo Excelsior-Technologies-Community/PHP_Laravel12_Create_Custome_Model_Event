@@ -10,12 +10,17 @@ use Illuminate\Support\Facades\Log;
 class ProductObserver
 {
     /**
-     * Generic status changed event.
+     * Status changed.
      */
     public function statusChanged(Product $product): void
     {
-        $oldStatus = Product::statusName($product->oldStatus);
-        $newStatus = Product::statusName($product->status);
+        $oldStatus = Product::statusName(
+            $product->oldStatus
+        );
+
+        $newStatus = Product::statusName(
+            $product->status
+        );
 
         Log::info('Product status changed.', [
             'product_id' => $product->id,
@@ -31,15 +36,15 @@ class ProductObserver
         ]);
 
         $this->createNotification(
-            product: $product,
-            event: 'statusChanged',
-            title: 'Product Status Changed',
-            message: "Product \"{$product->name}\" changed from {$oldStatus} to {$newStatus}."
+            $product,
+            'statusChanged',
+            'Product Status Changed',
+            "Product \"{$product->name}\" changed from {$oldStatus} to {$newStatus}."
         );
     }
 
     /**
-     * Activated event.
+     * Activated.
      */
     public function activated(Product $product): void
     {
@@ -48,7 +53,7 @@ class ProductObserver
             'product_name' => $product->name,
         ]);
 
-        $originalTimestamps = $product->timestamps;
+        $timestamps = $product->timestamps;
 
         $product->timestamps = false;
 
@@ -56,25 +61,29 @@ class ProductObserver
 
         $product->save();
 
-        $product->timestamps = $originalTimestamps;
+        $product->timestamps = $timestamps;
 
         ProductStatusLog::create([
             'product_id' => $product->id,
             'event' => 'activated',
-            'old_value' => Product::statusName($product->oldStatus),
-            'new_value' => Product::statusName($product->status),
+            'old_value' => Product::statusName(
+                $product->oldStatus
+            ),
+            'new_value' => Product::statusName(
+                $product->status
+            ),
         ]);
 
         $this->createNotification(
-            product: $product,
-            event: 'activated',
-            title: 'Product Activated',
-            message: "Product \"{$product->name}\" is now active."
+            $product,
+            'activated',
+            'Product Activated',
+            "Product \"{$product->name}\" is now active."
         );
     }
 
     /**
-     * Deactivated event.
+     * Deactivated.
      */
     public function deactivated(Product $product): void
     {
@@ -83,7 +92,7 @@ class ProductObserver
             'product_name' => $product->name,
         ]);
 
-        $originalTimestamps = $product->timestamps;
+        $timestamps = $product->timestamps;
 
         $product->timestamps = false;
 
@@ -91,25 +100,29 @@ class ProductObserver
 
         $product->save();
 
-        $product->timestamps = $originalTimestamps;
+        $product->timestamps = $timestamps;
 
         ProductStatusLog::create([
             'product_id' => $product->id,
             'event' => 'deactivated',
-            'old_value' => Product::statusName($product->oldStatus),
-            'new_value' => Product::statusName($product->status),
+            'old_value' => Product::statusName(
+                $product->oldStatus
+            ),
+            'new_value' => Product::statusName(
+                $product->status
+            ),
         ]);
 
         $this->createNotification(
-            product: $product,
-            event: 'deactivated',
-            title: 'Product Deactivated',
-            message: "Product \"{$product->name}\" has been deactivated."
+            $product,
+            'deactivated',
+            'Product Deactivated',
+            "Product \"{$product->name}\" has been deactivated."
         );
     }
 
     /**
-     * Archived event.
+     * Archived.
      */
     public function archived(Product $product): void
     {
@@ -118,7 +131,7 @@ class ProductObserver
             'product_name' => $product->name,
         ]);
 
-        $originalTimestamps = $product->timestamps;
+        $timestamps = $product->timestamps;
 
         $product->timestamps = false;
 
@@ -126,25 +139,29 @@ class ProductObserver
 
         $product->save();
 
-        $product->timestamps = $originalTimestamps;
+        $product->timestamps = $timestamps;
 
         ProductStatusLog::create([
             'product_id' => $product->id,
             'event' => 'archived',
-            'old_value' => Product::statusName($product->oldStatus),
-            'new_value' => Product::statusName($product->status),
+            'old_value' => Product::statusName(
+                $product->oldStatus
+            ),
+            'new_value' => Product::statusName(
+                $product->status
+            ),
         ]);
 
         $this->createNotification(
-            product: $product,
-            event: 'archived',
-            title: 'Product Archived',
-            message: "Product \"{$product->name}\" has been archived."
+            $product,
+            'archived',
+            'Product Archived',
+            "Product \"{$product->name}\" has been archived."
         );
     }
 
     /**
-     * Price changed event.
+     * Price changed.
      */
     public function priceChanged(Product $product): void
     {
@@ -162,10 +179,10 @@ class ProductObserver
         ]);
 
         $this->createNotification(
-            product: $product,
-            event: 'priceChanged',
-            title: 'Product Price Changed',
-            message: "Product \"{$product->name}\" price changed from ₹{$product->oldPrice} to ₹{$product->price}."
+            $product,
+            'priceChanged',
+            'Product Price Changed',
+            "Product \"{$product->name}\" price changed from ₹{$product->oldPrice} to ₹{$product->price}."
         );
     }
 
